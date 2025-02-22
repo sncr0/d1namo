@@ -1,0 +1,14 @@
+name: d1namo
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - streamlit
+  - fastapi
+  - uvicorn
+  - pedantic
+  - seaborn
+  - torch
