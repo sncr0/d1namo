@@ -12,11 +12,13 @@ import {
   ScrollView,
   Image,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, MaterialIcons } from "@expo/vector-icons"; // Or other icon library
 import { useFonts } from "expo-font";
 import Circle from "@/components/Circle";
+import LoadingMessage from "@/components/LoadingMessage";
 
 /*************  ✨ Codeium Command 🌟  *************/
 
@@ -30,11 +32,12 @@ export default function ChatBot() {
     },
   ]);
 
-  const [session_id, setSession_id] = useState(null);
+  const [session_id, setSession_id] = useState("");
   const [inputText, setInputText] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
 
@@ -64,6 +67,7 @@ export default function ChatBot() {
   }, [messages]);
   const sendMessage = async () => {
     if (inputText.trim() !== "") {
+      setLoading(true);
       setMessages([...messages, { text: inputText, sender: "user" }]);
       setInputText("");
       inputRef.current?.focus(); // Refocus the input field
@@ -85,19 +89,28 @@ export default function ChatBot() {
 
       const data = await response.json();
       setSession_id(data.session_id);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { text: data.response, sender: "bot" },
-      ]);
+      if (data.image) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: data.response,
+            sender: "bot",
+          },
+          {
+            text: "Here's your graph",
+            sender: "bot",
+            image: `data:image/jpeg;base64,${data.image}`, // Add base64 image to message
+          },
+        ]);
+      } else {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { text: data.response, sender: "bot" },
+        ]);
+      }
+      setLoading(false);
     }
   };
-
-  const Graph = () => (
-    <Image
-      source={{ uri: "https://i.imgur.com/your_graph_image.png" }} // Replace with your graph image URL
-      style={styles.graphImage}
-    />
-  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF8EF" }}>
@@ -134,13 +147,22 @@ export default function ChatBot() {
         >
           <View style={{ padding: 20 }}>
             {/* Static Content and initial bot messages */}
-            <Text style={styles.greetingText}>
-              Hi Ashley, what do you want to eat today?
-            </Text>
+            {loading && (
+              <View style={styles.botMessageContainer}>
+                <Text style={styles.botMessage}>
+                  Loading your food suggestion...
+                </Text>
+                <ActivityIndicator size="small" color="#0000ff" />
+              </View>
+            )}
             {messages.map((message, index) =>
-              message.sender === "bot" && index === 1 ? (
+              message.sender === "bot" && message.image ? (
                 <React.Fragment key={index}>
                   <Text style={styles.botMessage}>{message.text}</Text>
+                  <Image
+                    source={{ uri: message.image }}
+                    style={styles.graphImage}
+                  />
                 </React.Fragment>
               ) : message.sender === "bot" ? (
                 <Text key={index} style={styles.botMessage}>

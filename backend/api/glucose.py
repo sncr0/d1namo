@@ -54,6 +54,7 @@ def get_sample_prediction_heavy():
 def get_sample_prediction_medium():
     data = load_glucose_sample()
     data['glucose'] = (data['glucose'].iloc[453:550] - data['glucose'].iloc[453]) * 0.5 + data['glucose'].iloc[453]
+    data = data.iloc[453:550]
     return [
         GlucoseReading(date=d, time=t, glucose=g)
         for d, t, g in zip(data["date"], data["time"], data["glucose"])
@@ -64,6 +65,7 @@ def get_sample_prediction_medium():
 def get_sample_prediction_light():
     data = load_glucose_sample()
     data['glucose'] = (data['glucose'].iloc[453:550] - data['glucose'].iloc[453]) * 0.2 + data['glucose'].iloc[453]
+    data = data.iloc[453:550]
     return [
         GlucoseReading(date=d, time=t, glucose=g)
         for d, t, g in zip(data["date"], data["time"], data["glucose"])

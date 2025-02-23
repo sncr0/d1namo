@@ -1,3 +1,6 @@
+import base64
+from io import BytesIO
+import json
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -6,12 +9,14 @@ import random
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.tools import tool
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
 import requests
 from dotenv import load_dotenv
 import os
 import re
+import plotly.graph_objects as go
+import pandas as pd
 
 from api.glucose import GlucoseReading, get_sample_prediction_heavy, get_sample_prediction_medium, get_sample_prediction_light,get_sample_current
 
@@ -40,8 +45,13 @@ When a user describes their meal, follow these steps:
 4. Predict if the meal will cause increase in glucose:
   - Use the get_prediction tool to predict if the meal will cause increase in glucose for different abstract amounts (heavy, medium, light) of the food.
 5. Use the predictions to provide insightful output about eating the meal.
-  - Tell the user if it's safe to eat the meal or not
-  - Describe alternatives to the meal (use the original user meal) if necessary.
+  - Tell the user if it's safe to eat the meal or not based on the different scenarios, and which one will not cause problems.
+6. Provide a summary of the conversation and ask if the user has any other questions or needs further assistance.
+
+
+Do not include the nutrional data or glucose level in the final response. Only provide the recommendation.
+DO NOT RETURN THE ANSWER IN MARKDOWN JUST PLAIN TEXT. Keep each section as a separate message to maintain organization.
+
 
 **Tools available:**
 - get_nutri_data: Use this to fetch nutritional data from ingredients of a meal after calling USDA FoodData Central API.
@@ -100,6 +110,91 @@ def get_nutri_data(ingredients: list[str] = None) -> dict[str:float]:
 
     return total_nutrition
 
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
+import time
+
+def generate_graph_data():
+    """
+    Generate a graph showing the actual and predicted glucose values.
+    Args:
+        tool_input (Optional[str]): Input argument required by the tool decorator, not used in the function.
+    Returns:
+        str: Base64 encoded image of the graph.
+    """
+
+    start_time = time.time()
+
+    current = get_sample_current()
+    heavy = get_sample_prediction_heavy()
+    medium = get_sample_prediction_medium()
+    light = get_sample_prediction_light()
+
+    # Load glucose data
+    # df = glucose_df[glucose_df['type'] == "cgm"]
+
+    # Extract actual and predicted glucose values
+
+    # actual_y = [{"date": e.date, "glucose": e.glucose} for e in current.iloc[435:454]]
+    # heavy_data = [{"date": e.date, "glucose": e.glucose} for e in heavy.iloc[454:473]]
+    # medium_data = [{"date": e.date, "glucose": e.glucose} for e in medium.iloc[454:473]]
+    # light_data = [{"date": e.date, "glucose": e.glucose} for e in light.iloc[454:473]]
+
+    actual_x = range(453)  # First 453 data points
+    actual_y = [i.glucose for i in current]
+    print(f"Length of actualx: {len(actual_x)}")
+    print(f"Length of actualy: {len(actual_y)}")
+
+    heavy_x = range(453, 550)  # Next range for heavy prediction
+    print(f"Length of heavyx: {len(heavy_x)}")
+    heavy_y = [i.glucose for i in heavy]
+    print(len(heavy_y))
+
+    medium_y = [i.glucose for i in medium]
+    print(f"Length of mediumy: {len(medium_y)}")
+    light_y = [i.glucose for i in light]
+    print(f"Length of lighty: {len(light_y)}")
+
+    print("Time taken (data processing):", time.time() - start_time)
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Plot actual data
+    ax.plot(actual_x, actual_y, color='black', linewidth=2, label='Actual Data')
+
+    # Add vertical line at index 453
+    ax.axvline(x=453, color='gray', linestyle='--', linewidth=2, label='Separation Line')
+
+    # Plot predicted glucose values
+    ax.plot(heavy_x, heavy_y, color='red', linestyle='--', linewidth=2, label='Heavy Prediction')
+    ax.plot(heavy_x, medium_y, color='orange', linestyle='--', linewidth=2, label='Medium Prediction')
+    ax.plot(heavy_x, light_y, color='green', linestyle='--', linewidth=2, label='Light Prediction')
+
+    print("Time taken (plotting):", time.time() - start_time)
+
+    # Customize the plot
+    ax.set_title('Glucose Prediction', fontsize=14, color='black')
+    ax.set_xlabel('Time Steps', fontsize=12, color='black')
+    ax.set_ylabel('Glucose Level', fontsize=12, color='black')
+    ax.legend()
+    ax.grid(True, linestyle='--', alpha=0.6)
+
+    # Save image to a buffer
+    img_buffer = BytesIO()
+    plt.savefig(img_buffer, format='jpeg', bbox_inches='tight', dpi=100)
+    plt.close(fig)  # Free memory
+    img_buffer.seek(0)
+
+    # Convert to base64 for API response
+    img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+
+    print("Time taken (image encoding):", time.time() - start_time)
+
+    return img_base64
+
+
 import random
 
 @tool
@@ -109,7 +204,6 @@ def get_predictions(nutri_data: Dict[str, float]) -> Dict[str, List[GlucoseReadi
     
     Args:
         nutri_data (Dict[str, int]): Nutritional info (calories, carbs, protein, etc.) of the meal.
-        glucose_data (List[GlucoseReading]): Timeseries glucose data from the user until now.
 
     Returns:
         Dict[str, List[GlucoseReading]]: ML prediction for different amounts of the meal.
@@ -159,6 +253,7 @@ class ChatResponse(BaseModel):
     response: str
     session_id: str
     timestamp: str
+    image: Optional[str] = None
 
 class GluDailyAgent:
     def __init__(self):
@@ -184,33 +279,39 @@ class GluDailyAgent:
         )
 
     async def process_message(self, message: str, thread_id: Optional[str] = None):
-        """Process a query through the agent"""
+        """Process a query through the agent and handle all tool calls properly"""
         if not thread_id:
             thread_id = datetime.now().strftime("%Y%m%d-%H%M%S")
             
         config = {"configurable": {"thread_id": thread_id}}
+        contains_prediction = False
         
         # Process through agent
-        for chunk in self.agent.stream(
+        async for chunk in self.agent.astream(
             {"messages": [HumanMessage(content=message)]},
             config
         ):
             if isinstance(chunk, dict):
-                # Skip tool messages
-                if 'tools' in chunk:
-                    continue
-                    
-                # Handle final agent response
-                if 'agent' in chunk and 'messages' in chunk['agent']:
-                    messages = chunk['agent']['messages']
-                    if isinstance(messages, list) and len(messages) > 0:
+                if 'agent' in chunk:
+                    messages = chunk['agent'].get('messages', [])
+                    if messages and isinstance(messages[0], AIMessage):
+                        # Check for tool calls in the message
+                        tool_calls = messages[0].additional_kwargs.get('tool_calls', [])
+                        for tool_call in tool_calls:
+                            if tool_call['function']['name'] == 'get_predictions':
+                                contains_prediction = True
+                        # Get the final response content
                         final_response = messages[0].content
-            
+                elif 'tools' in chunk:
+                    # Process tool execution results if needed
+                    continue
+
+        # Generate graph only if predictions were made
+        image_data = None
+        if contains_prediction:
+            image_data = generate_graph_data()
         
-        if final_response:
-            return final_response, thread_id
-        else:
-            return "", thread_id
+        return final_response, thread_id, image_data
 
     def setup_environment(self):
         """Setup required environment variables"""
@@ -246,7 +347,7 @@ async def chatbot_home():
 async def chat_with_ai(request: ChatRequest):
     try:
         print("diz nuts")
-        response, session_id = await agent.process_message(request.message, request.session_id)
+        response, session_id, image = await agent.process_message(request.message, request.session_id)
         print(response)
         print(session_id)
 
@@ -254,8 +355,19 @@ async def chat_with_ai(request: ChatRequest):
             response=response,
             session_id=session_id,
             timestamp=datetime.now().isoformat(),
+            image=image
         )
         return result
     except Exception as e:
-        return {"response": f"An error occurred: {str(e)}"}
+        return ChatResponse(
+            response=f"An error occurred: {str(e)}",
+            session_id=request.session_id or "unknown",
+            timestamp=datetime.now().isoformat(),
+            image=None
+        )
+    
+@chatbot_router.get("/graph")
+async def generate_graph():
+    img_base64 = generate_graph_data()
+    return {"image": img_base64}
 
