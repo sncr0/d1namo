@@ -1,0 +1,17 @@
+[MASTER]
+# Testing with fixtures raises this error
+disable=redefined-outer-name
+
+# Logging works fine like this
+disable=logging-fstring-interpolation
+
+# dev disables
+disable=missing-module-docstring,unused-import
+
+# Allow the following variable names to bypass the `invalid-name` warning
+good-names=T,beta,deltaA,deltaA_list,deltaE_mp,calculate_deltaA,deltaU_ij,deltaU_ji,deltaU_ij_mp,deltaU_ji_mp,deltaA_mp,deltaA_solution
+
+[FORMAT]
+max-line-length = 120
+
+init-hook='import sys; sys.path.append("fep_calculator")'
