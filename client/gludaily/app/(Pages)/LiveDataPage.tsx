@@ -9,7 +9,7 @@ const LiveDataPage = () => (
   <View style={styles.container}>
     <LiveGraph />
     <TouchableOpacity onPress={() => router.replace("/chatBot")}>
-      <Text style={styles.backButton}>Back</Text> {/* Updated here */}
+      <Text style={styles.backButton}>Back</Text>
     </TouchableOpacity>
   </View>
 );
@@ -19,10 +19,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "black", // Set the background color to white
+    backgroundColor: "black",
   },
   backButton: {
-    color: "white", // Set the text color to white
+    color: "white",
   },
 });
 

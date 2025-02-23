@@ -14,15 +14,12 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, MaterialIcons } from "@expo/vector-icons"; // Or other icon library
-import { useFonts } from "expo-font";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import Circle from "@/components/Circle";
-
-/*************  ✨ Codeium Command 🌟  *************/
+import LoadingMessage from "@/components/LoadingMessage";
+import StickyBar from "@/components/StickyBar";
 
 export default function ChatBot() {
-  const router = useRouter();
-
   const [messages, setMessages] = useState([
     {
       text: "Hi Ashley, welcome to GluDaily! What do you want to eat today?",
@@ -30,11 +27,12 @@ export default function ChatBot() {
     },
   ]);
 
-  const [session_id, setSession_id] = useState(null);
+  const [session_id, setSession_id] = useState("");
   const [inputText, setInputText] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
 
@@ -56,22 +54,25 @@ export default function ChatBot() {
       keyboardDidShowListener.remove();
     };
   }, []);
+
   useEffect(() => {
     // Scroll to bottom when messages change
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
+
+  // Send a message to the chatbot
   const sendMessage = async () => {
     if (inputText.trim() !== "") {
+      setLoading(true);
       setMessages([...messages, { text: inputText, sender: "user" }]);
       setInputText("");
       inputRef.current?.focus(); // Refocus the input field
-      // Optionally, send the message to your backend here.
+      // Hard-coded API call to local API from expo.
       const ipAddress = "10.253.132.164";
       const uri = `http://${ipAddress}:8000/chatbot/chat`;
-      console.log(session_id);
-      console.log(inputText);
+
       const response = await fetch(uri, {
         method: "POST",
         headers: {
@@ -85,19 +86,28 @@ export default function ChatBot() {
 
       const data = await response.json();
       setSession_id(data.session_id);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { text: data.response, sender: "bot" },
-      ]);
+      if (data.image) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: data.response,
+            sender: "bot",
+          },
+          {
+            text: "Here's your graph",
+            sender: "bot",
+            image: `data:image/jpeg;base64,${data.image}`, // Add base64 image to message
+          },
+        ]);
+      } else {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { text: data.response, sender: "bot" },
+        ]);
+      }
+      setLoading(false);
     }
   };
-
-  const Graph = () => (
-    <Image
-      source={{ uri: "https://i.imgur.com/your_graph_image.png" }} // Replace with your graph image URL
-      style={styles.graphImage}
-    />
-  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF8EF" }}>
@@ -134,23 +144,32 @@ export default function ChatBot() {
         >
           <View style={{ padding: 20 }}>
             {/* Static Content and initial bot messages */}
-            <Text style={styles.greetingText}>
-              Hi Ashley, what do you want to eat today?
-            </Text>
             {messages.map((message, index) =>
-              message.sender === "bot" && index === 1 ? (
+              message.sender === "bot" && message.image ? (
                 <React.Fragment key={index}>
-                  <Text style={styles.botMessage}>{message.text}</Text>
+                  <View style={styles.botMessageContainer}>
+                    <Text style={styles.botMessage}>{message.text}</Text>
+                    <Image
+                      source={{ uri: message.image }}
+                      style={styles.graphImage}
+                    />
+                  </View>
                 </React.Fragment>
               ) : message.sender === "bot" ? (
-                <Text key={index} style={styles.botMessage}>
-                  {message.text}
-                </Text>
+                <View key={index} style={styles.botMessageContainer}>
+                  <Text style={styles.botMessage}>{message.text}</Text>
+                </View>
               ) : (
-                <Text key={index} style={styles.userMessage}>
-                  {message.text}
-                </Text>
+                <View key={index} style={styles.userMessageContainer}>
+                  <Text style={styles.userMessage}>{message.text}</Text>
+                </View>
               )
+            )}
+
+            {loading && (
+              <View style={styles.botMessageContainer}>
+                <LoadingMessage />
+              </View>
             )}
           </View>
         </ScrollView>
@@ -178,17 +197,10 @@ export default function ChatBot() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      <View style={styles.stickyBar}>
-        <TouchableOpacity onPress={() => router.replace("/LiveDataPage")}>
-          <Text style={styles.buttonText}>
-            What does my blood sugar look like?
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <StickyBar />
     </SafeAreaView>
   );
 }
-/******  0810ac22-2e32-4e17-ad59-f7f5a9c3cc11  *******/
 
 const styles = StyleSheet.create({
   container: {
@@ -273,9 +285,12 @@ const styles = StyleSheet.create({
     top: 0, // Positions the bar at the bottom of the screen
     left: 0,
     right: 0,
-    backgroundColor: "black", // Gray color
+    backgroundColor: "#202020", // Gray color
     padding: 15,
+    paddingTop: 40,
     alignItems: "center", // Center the text horizontally
     justifyContent: "center", // Center the text vertically
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
 });
