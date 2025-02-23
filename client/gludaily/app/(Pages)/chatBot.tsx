@@ -19,6 +19,7 @@ import { Feather, MaterialIcons } from "@expo/vector-icons"; // Or other icon li
 import { useFonts } from "expo-font";
 import Circle from "@/components/Circle";
 import LoadingMessage from "@/components/LoadingMessage";
+import StickyBar from "@/components/StickyBar";
 
 /*************  ✨ Codeium Command 🌟  *************/
 
@@ -147,32 +148,32 @@ export default function ChatBot() {
         >
           <View style={{ padding: 20 }}>
             {/* Static Content and initial bot messages */}
-            {loading && (
-              <View style={styles.botMessageContainer}>
-                <Text style={styles.botMessage}>
-                  Loading your food suggestion...
-                </Text>
-                <ActivityIndicator size="small" color="#0000ff" />
-              </View>
-            )}
             {messages.map((message, index) =>
               message.sender === "bot" && message.image ? (
                 <React.Fragment key={index}>
-                  <Text style={styles.botMessage}>{message.text}</Text>
-                  <Image
-                    source={{ uri: message.image }}
-                    style={styles.graphImage}
-                  />
+                  <View style={styles.botMessageContainer}>
+                    <Text style={styles.botMessage}>{message.text}</Text>
+                    <Image
+                      source={{ uri: message.image }}
+                      style={styles.graphImage}
+                    />
+                  </View>
                 </React.Fragment>
               ) : message.sender === "bot" ? (
-                <Text key={index} style={styles.botMessage}>
-                  {message.text}
-                </Text>
+                <View key={index} style={styles.botMessageContainer}>
+                  <Text style={styles.botMessage}>{message.text}</Text>
+                </View>
               ) : (
-                <Text key={index} style={styles.userMessage}>
-                  {message.text}
-                </Text>
+                <View key={index} style={styles.userMessageContainer}>
+                  <Text style={styles.userMessage}>{message.text}</Text>
+                </View>
               )
+            )}
+
+            {loading && (
+              <View style={styles.botMessageContainer}>
+                <LoadingMessage />
+              </View>
             )}
           </View>
         </ScrollView>
@@ -200,13 +201,7 @@ export default function ChatBot() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      <View style={styles.stickyBar}>
-        <TouchableOpacity onPress={() => router.replace("/LiveDataPage")}>
-          <Text style={styles.buttonText}>
-            What does my blood sugar look like?
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <StickyBar />
     </SafeAreaView>
   );
 }
@@ -295,9 +290,12 @@ const styles = StyleSheet.create({
     top: 0, // Positions the bar at the bottom of the screen
     left: 0,
     right: 0,
-    backgroundColor: "black", // Gray color
+    backgroundColor: "#202020", // Gray color
     padding: 15,
+    paddingTop: 40,
     alignItems: "center", // Center the text horizontally
     justifyContent: "center", // Center the text vertically
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
 });
