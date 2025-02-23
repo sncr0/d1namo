@@ -126,7 +126,7 @@ def get_predictions(nutri_data: Dict[str, float]) -> Dict[str, List[GlucoseReadi
 
     print(heavy)
     print(medium)
-    
+
 
 
     # # Example of how nutritional info could affect glucose level
@@ -215,7 +215,7 @@ class GluDailyAgent:
     def setup_environment(self):
         """Setup required environment variables"""
         required_vars = {
-            "LANGSMITH_API_KEY": "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",
+            "LANGSMITH_API_KEY": os.getenv("LANGSMITH_API_KEY"),
             "LANGSMITH_TRACING": "true",
             "LANGSMITH_ENDPOINT": "https://api.smith.langchain.com",
         }
