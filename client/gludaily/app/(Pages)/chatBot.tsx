@@ -35,6 +35,9 @@ export default function ChatBot() {
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const inputRef = useRef<TextInput>(null);
+
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
@@ -63,6 +66,7 @@ export default function ChatBot() {
     if (inputText.trim() !== "") {
       setMessages([...messages, { text: inputText, sender: "user" }]);
       setInputText("");
+      inputRef.current?.focus(); // Refocus the input field
       // Optionally, send the message to your backend here.
       const ipAddress = "10.253.132.164";
       const uri = `http://${ipAddress}:8000/chatbot/chat`;
@@ -119,7 +123,7 @@ export default function ChatBot() {
       </View>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} // Adjust as needed
       >
         <TouchableOpacity onPress={() => router.replace("/LiveDataPage")}>
@@ -130,6 +134,7 @@ export default function ChatBot() {
           style={styles.messagesContainer}
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={{ padding: 20 }}>
             {/* Static Content and initial bot messages */}
@@ -156,10 +161,11 @@ export default function ChatBot() {
         <View
           style={[
             styles.inputContainer,
-            { paddingBottom: keyboardVisible ? insets.bottom : 0 },
+            { paddingBottom: keyboardVisible ? insets.bottom : 10 },
           ]}
         >
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder="Type the food name here"
             placeholderTextColor="white"
@@ -222,7 +228,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 40,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
   },
 
   input: {
