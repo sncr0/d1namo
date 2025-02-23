@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { VictoryLine } from 'victory-native';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+// import { VictoryLine } from "victory-native";
 
 const LiveGraphVictory = () => {
   const data = [
@@ -13,22 +13,23 @@ const LiveGraphVictory = () => {
   ];
 
   return (
-    <View style={styles.container}>
-      <VictoryLine
-        data={data}
-        width={350}
-        height={300}
-        scale={{ x: 'linear', y: 'linear' }}
-      />
-    </View>
+    <></>
+    // <View style={styles.container}>
+    //   <VictoryLine
+    //     data={data}
+    //     width={350}
+    //     height={300}
+    //     scale={{ x: 'linear', y: 'linear' }}
+    //   />
+    // </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
