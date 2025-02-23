@@ -33,7 +33,7 @@ def get_sample():
 @glucose_router.get("/sample_current", response_model=GlucoseReading)
 def get_sample_current():
     data = load_glucose_sample()
-    data = data['glucose'][:453]
+    data = data[:453]
     return [
         GlucoseReading(date=d, time=t, glucose=g)
         for d, t, g in zip(data["date"], data["time"], data["glucose"])
@@ -43,7 +43,7 @@ def get_sample_current():
 @glucose_router.get("/sample_prediction_heavy", response_model=GlucoseReading)
 def get_sample_prediction_heavy():
     data = load_glucose_sample()
-    data = data['glucose'][453:550]
+    data = data.iloc[453:550]
     return [
         GlucoseReading(date=d, time=t, glucose=g)
         for d, t, g in zip(data["date"], data["time"], data["glucose"])
@@ -53,7 +53,7 @@ def get_sample_prediction_heavy():
 @glucose_router.get("/sample_prediction_medium", response_model=GlucoseReading)
 def get_sample_prediction_medium():
     data = load_glucose_sample()
-    data = (data['glucose'][453:550] - data['glucose'][453]) * 0.5 + data['glucose'][453]
+    data['glucose'] = (data['glucose'].iloc[453:550] - data['glucose'].iloc[453]) * 0.5 + data['glucose'].iloc[453]
     return [
         GlucoseReading(date=d, time=t, glucose=g)
         for d, t, g in zip(data["date"], data["time"], data["glucose"])
@@ -63,7 +63,7 @@ def get_sample_prediction_medium():
 @glucose_router.get("/sample_prediction_light", response_model=GlucoseReading)
 def get_sample_prediction_light():
     data = load_glucose_sample()
-    data = (data['glucose'][453:550] - data['glucose'][453]) * 0.2 + data['glucose'][453]
+    data['glucose'] = (data['glucose'].iloc[453:550] - data['glucose'].iloc[453]) * 0.2 + data['glucose'].iloc[453]
     return [
         GlucoseReading(date=d, time=t, glucose=g)
         for d, t, g in zip(data["date"], data["time"], data["glucose"])
