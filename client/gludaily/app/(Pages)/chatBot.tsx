@@ -12,20 +12,14 @@ import {
   ScrollView,
   Image,
   SafeAreaView,
-  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather, MaterialIcons } from "@expo/vector-icons"; // Or other icon library
-import { useFonts } from "expo-font";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import Circle from "@/components/Circle";
 import LoadingMessage from "@/components/LoadingMessage";
 import StickyBar from "@/components/StickyBar";
 
-/*************  ✨ Codeium Command 🌟  *************/
-
 export default function ChatBot() {
-  const router = useRouter();
-
   const [messages, setMessages] = useState([
     {
       text: "Hi Ashley, welcome to GluDaily! What do you want to eat today?",
@@ -60,23 +54,25 @@ export default function ChatBot() {
       keyboardDidShowListener.remove();
     };
   }, []);
+
   useEffect(() => {
     // Scroll to bottom when messages change
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
+
+  // Send a message to the chatbot
   const sendMessage = async () => {
     if (inputText.trim() !== "") {
       setLoading(true);
       setMessages([...messages, { text: inputText, sender: "user" }]);
       setInputText("");
       inputRef.current?.focus(); // Refocus the input field
-      // Optionally, send the message to your backend here.
+      // Hard-coded API call to local API from expo.
       const ipAddress = "10.253.132.164";
       const uri = `http://${ipAddress}:8000/chatbot/chat`;
-      console.log(session_id);
-      console.log(inputText);
+
       const response = await fetch(uri, {
         method: "POST",
         headers: {
@@ -205,7 +201,6 @@ export default function ChatBot() {
     </SafeAreaView>
   );
 }
-/******  0810ac22-2e32-4e17-ad59-f7f5a9c3cc11  *******/
 
 const styles = StyleSheet.create({
   container: {
