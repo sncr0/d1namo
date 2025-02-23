@@ -23,13 +23,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: '#007AFF',
+    marginTop: 20,
+    backgroundColor: 'black', // Corrected to use a comma
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 20,
+    alignItems: 'center',
+    width: 100,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
+
   },
 });
 

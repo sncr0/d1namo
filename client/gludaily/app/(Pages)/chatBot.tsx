@@ -126,10 +126,6 @@ export default function ChatBot() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} // Adjust as needed
       >
-        <TouchableOpacity onPress={() => router.replace("/LiveDataPage")}>
-          <Text>Start</Text>
-        </TouchableOpacity>
-
         <ScrollView
           style={styles.messagesContainer}
           ref={scrollViewRef}
@@ -182,6 +178,13 @@ export default function ChatBot() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <View style={styles.stickyBar}>
+        <TouchableOpacity onPress={() => router.replace("/LiveDataPage")}>
+          <Text style={styles.buttonText}>
+            What does my blood sugar look like?
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -195,6 +198,7 @@ const styles = StyleSheet.create({
   messagesContainer: {
     flex: 1,
     paddingTop: 10,
+    marginTop: 50,
   },
   greetingText: {
     fontFamily: "Futura Md BT, sans-serif",
@@ -250,5 +254,28 @@ const styles = StyleSheet.create({
     height: 200, // Adjust the height as needed
     resizeMode: "contain", // Or 'cover' depending on your needs
     marginBottom: 15,
+  },
+  button: {
+    marginTop: 20,
+    marginLeft: 20,
+    backgroundColor: "black",
+    padding: 10,
+    borderRadius: 20,
+    width: 250, // Specifies the width of the button
+    alignItems: "center", // Centers content horizontally
+    justifyContent: "center", // Centers content vertically
+  },
+  buttonText: {
+    color: "white", // Ensures the text inside the button is white for contrast
+  },
+  stickyBar: {
+    position: "absolute", // Makes the bar stay in place
+    top: 0, // Positions the bar at the bottom of the screen
+    left: 0,
+    right: 0,
+    backgroundColor: "black", // Gray color
+    padding: 15,
+    alignItems: "center", // Center the text horizontally
+    justifyContent: "center", // Center the text vertically
   },
 });
