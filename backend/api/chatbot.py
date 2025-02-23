@@ -245,6 +245,7 @@ async def chatbot_home():
 @chatbot_router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(request: ChatRequest):
     try:
+        print("diz nuts")
         response, session_id = await agent.process_message(request.message, request.session_id)
         print(response)
         print(session_id)
